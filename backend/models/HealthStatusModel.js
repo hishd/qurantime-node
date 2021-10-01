@@ -15,6 +15,10 @@ const HealthStatusSchema = mongoose.Schema({
       required: true,
     },
   },
+  hospitalID: {
+    type: String,
+    required: true,
+  },
   healthStatus: {
     type: String,
     required: true,
@@ -22,17 +26,14 @@ const HealthStatusSchema = mongoose.Schema({
   currentCondition: {
     condition: {
       type: String,
-      required: true,
     },
     lastUpdate: {
       type: Date,
-      required: true,
     },
     symptoms: [
       {
         symptom: {
           type: String,
-          required: true,
         },
       },
     ],
@@ -41,19 +42,15 @@ const HealthStatusSchema = mongoose.Schema({
     {
       spo2Level: {
         type: Number,
-        required: true,
       },
       bpmLevel: {
         type: Number,
-        required: true,
       },
       time: {
         type: Date,
-        required: true,
       },
       result: {
         type: String,
-        required: true,
       },
     },
   ],

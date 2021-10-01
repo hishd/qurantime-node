@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
 
 const OfficerSchema = mongoose.Schema(
   {
@@ -9,6 +10,7 @@ const OfficerSchema = mongoose.Schema(
     nicNo: {
       type: String,
       required: true,
+      unique: true,
     },
     contactNo: {
       type: String,

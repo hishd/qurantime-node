@@ -1,10 +1,12 @@
 import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
 
 const PatientSchema = mongoose.Schema(
   {
     nicNo: {
       type: String,
       required: true,
+      unique: true,
     },
     fullName: {
       type: String,
@@ -15,6 +17,10 @@ const PatientSchema = mongoose.Schema(
       required: true,
     },
     contactNo: {
+      type: String,
+      required: true,
+    },
+    emailAddress: {
       type: String,
       required: true,
     },
