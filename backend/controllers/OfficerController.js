@@ -292,7 +292,7 @@ const filterByStatus = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
   if (!req.body.fullName)
-    return res.status(400).send({ error: 'Full Name number not found' })
+    return res.status(400).send({ error: 'Full Name not found' })
   if (!req.body.contactNo)
     return res.status(400).send({ error: 'Contact number not found' })
   if (!req.body.emailAddress)
@@ -303,7 +303,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   })
 
   if (!officerData)
-    return res.send(404).json({ error: 'Officer account not found' })
+    return res.send(404).json({ error: 'Officer account not updated' })
 
   officerData.fullName = req.body.fullName
   officerData.contactNo = req.body.contactNo
