@@ -231,7 +231,7 @@ const searchPatients = asyncHandler(async (req, res) => {
 const removePatient = asyncHandler(async (req, res) => {
   Patient.findOneAndRemove({ nicNo: req.params.nicNo }, function (err, data) {
     if (!err) {
-      await HealthStatus.findOneAndRemove({ 'patient.nicNo': req.params.nicNo })
+      HealthStatus.findOneAndRemove({ 'patient.nicNo': req.params.nicNo })
       res.status(200).json({ result: 'Patient record removed' })
     } else {
       res.status(400).json({ error: 'Could not remove Patient record!' })
