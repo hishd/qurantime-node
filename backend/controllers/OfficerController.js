@@ -15,7 +15,7 @@ const signIn = asyncHandler(async (req, res) => {
   const officerData = await Officer.findOne({ emailAddress: req.body.email })
 
   if (!officerData)
-    return res.send(404).json({ error: 'Officer account not found' })
+    return res.status(404).json({ error: 'Officer account not found' })
 
   if (await officerData.matchPassword(req.body.password)) {
     return res.json({
@@ -29,7 +29,7 @@ const signIn = asyncHandler(async (req, res) => {
       cityName: officerData.city.cityName,
     })
   } else {
-    return res.send(401).json({ error: 'Invalid email or password' })
+    return res.status(401).json({ error: 'Invalid email or password' })
   }
 })
 
@@ -39,7 +39,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   const officerData = await Officer.findOne({ emailAddress: req.body.email })
 
   if (!officerData)
-    return res.send(404).json({ error: 'Officer account not found' })
+    return res.status(404).json({ error: 'Officer account not found' })
 
   const otp = Math.floor(1000 + Math.random() * 9000)
   res.json({ email: officerData.emailAddress, otp: otp })
@@ -52,7 +52,7 @@ const updatePassword = asyncHandler(async (req, res) => {
   const officerData = await Officer.findOne({ emailAddress: req.body.email })
 
   if (!officerData)
-    return res.send(404).json({ error: 'Officer account not found' })
+    return res.status(404).json({ error: 'Officer account not found' })
 
   officerData.password = req.body.password
   await officerData.save()
@@ -133,7 +133,9 @@ const registerPatient = asyncHandler(async (req, res) => {
   var comorbidities = []
   if (req.body.comorbidities) {
     for (const entry of req.body.comorbidities) {
-      comorbidities.push(entry.name)
+      comorbidities.push({
+        name: entry.name,
+      })
     }
   }
 
@@ -164,6 +166,7 @@ const registerPatient = asyncHandler(async (req, res) => {
     })
   } else {
     const patientData = {
+      nicNo: nicNo,
       fullName: fullName,
       address: address,
       contactNo: contactNo,
@@ -192,6 +195,7 @@ const registerPatient = asyncHandler(async (req, res) => {
           'patient.nicNo': nicNo,
           'patient.fullName': fullName,
           'patient.contactNo': contactNo,
+          'patient.cityID': cityID,
           hospitalID: hospitalID,
           healthStatus: 'Normal Condition',
         }
@@ -212,26 +216,34 @@ const registerPatient = asyncHandler(async (req, res) => {
 })
 
 const searchPatients = asyncHandler(async (req, res) => {
+  if (!req.body.cityID)
+    return res.status(400).send({ error: 'City ID not found' })
+  var patientDataResponse = []
   if (!req.body.nicNo) {
-    const patientsData = await HealthStatus.find({}, [
-      'patient.nicNo',
-      'patient.fullName',
-      'patient.contactNo',
-    ])
-    res.json(patientsData)
+    const patientsData = await HealthStatus.find(
+      { 'patient.cityID': req.body.cityID },
+      ['patient.nicNo', 'patient.fullName', 'patient.contactNo']
+    )
+    for (const data of patientsData) {
+      patientDataResponse.push(data.patient)
+    }
+    res.json(patientDataResponse)
   } else {
     const patientsData = await HealthStatus.find(
       { 'patient.nicNo': req.body.nicNo },
       ['patient.nicNo', 'patient.fullName', 'patient.contactNo']
     )
-    res.json(patientsData)
+    for (const data of patientsData) {
+      patientDataResponse.push(data.patient)
+    }
+    res.json(patientDataResponse)
   }
 })
 
 const removePatient = asyncHandler(async (req, res) => {
-  Patient.findOneAndRemove({ nicNo: req.params.nicNo }, function (err, data) {
+  Patient.findOneAndRemove({ nicNo: req.body.nicNo }, function (err, data) {
     if (!err) {
-      HealthStatus.findOneAndRemove({ 'patient.nicNo': req.params.nicNo })
+      HealthStatus.findOneAndRemove({ 'patient.nicNo': req.body.nicNo })
       res.status(200).json({ result: 'Patient record removed' })
     } else {
       res.status(400).json({ error: 'Could not remove Patient record!' })
@@ -240,6 +252,9 @@ const removePatient = asyncHandler(async (req, res) => {
 })
 
 const filterByStatus = asyncHandler(async (req, res) => {
+  if (!req.body.cityID)
+    return res.status(400).send({ error: 'City ID not found' })
+
   if (!req.body.healthStatus && !req.body.currentCondition)
     return res
       .status(400)
@@ -249,7 +264,10 @@ const filterByStatus = asyncHandler(async (req, res) => {
 
   if (req.body.healthStatus) {
     healthData = await HealthStatus.find(
-      { healthStatus: req.body.HealthStatus },
+      {
+        healthStatus: req.body.HealthStatus,
+        'patient.cityID': req.body.cityID,
+      },
       [
         'patient.nicNo',
         'patient.fullName',
@@ -263,7 +281,10 @@ const filterByStatus = asyncHandler(async (req, res) => {
 
   if (req.body.currentCondition) {
     healthData = await HealthStatus.find(
-      { 'currentCondition.condition': req.body.currentCondition },
+      {
+        'currentCondition.condition': req.body.currentCondition,
+        'patient.cityID': req.body.cityID,
+      },
       [
         'patient.nicNo',
         'patient.fullName',
@@ -276,7 +297,7 @@ const filterByStatus = asyncHandler(async (req, res) => {
   }
 
   var responseData = []
-  for (data of healthData) {
+  for (const data of healthData) {
     responseData.push({
       nicNo: data.patient.nicNo,
       fullName: data.patient.fullName,
@@ -291,6 +312,8 @@ const filterByStatus = asyncHandler(async (req, res) => {
 })
 
 const updateProfile = asyncHandler(async (req, res) => {
+  if (!req.body.nicNo)
+    return res.status(400).send({ error: 'NIC number not found' })
   if (!req.body.fullName)
     return res.status(400).send({ error: 'Full Name not found' })
   if (!req.body.contactNo)
@@ -299,11 +322,11 @@ const updateProfile = asyncHandler(async (req, res) => {
     return res.status(400).send({ error: 'Email Address not found' })
 
   const officerData = await Officer.findOne({
-    emailAddress: req.body.emailAddress,
+    nicNo: req.body.nicNo,
   })
 
   if (!officerData)
-    return res.send(404).json({ error: 'Officer account not updated' })
+    return res.status(404).json({ error: 'Officer account not updated' })
 
   officerData.fullName = req.body.fullName
   officerData.contactNo = req.body.contactNo

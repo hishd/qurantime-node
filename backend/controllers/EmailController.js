@@ -13,9 +13,9 @@ const sendOTP = (reciever, otp) => {
   const body = `Please use <b>${otp}</b> as your OTP to reset your password!`
 
   const mailOptions = {
-    from: 'noreply@nibmjobportal.com', // sender address
+    from: 'noreply@qurantimeapp.com', // sender address
     to: reciever, // list of receivers
-    subject: 'Reset Password - NIBM JobPortal', // Subject line
+    subject: 'Reset Password - Qurantime Application', // Subject line
     html: body, // plain text body
   }
 

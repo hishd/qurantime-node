@@ -15,7 +15,7 @@ const signIn = asyncHandler(async (req, res) => {
   const patientData = await Patient.findOne({ emailAddress: req.body.email })
 
   if (!patientData)
-    return res.send(404).json({ error: 'Patient account not found' })
+    return res.status(404).json({ error: 'Patient account not found' })
 
   if (await patientData.matchPassword(req.body.password)) {
     return res.json({
@@ -27,7 +27,7 @@ const signIn = asyncHandler(async (req, res) => {
       hospitalID: patientData.hospital.hospitalID,
     })
   } else {
-    return res.send(401).json({ error: 'Invalid email or password' })
+    return res.status(401).json({ error: 'Invalid email or password' })
   }
 })
 
@@ -37,7 +37,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   const patientData = await Patient.findOne({ emailAddress: req.body.email })
 
   if (!patientData)
-    return res.send(404).json({ error: 'Patient account not found' })
+    return res.status(404).json({ error: 'Patient account not found' })
 
   const otp = Math.floor(1000 + Math.random() * 9000)
   res.json({ email: patientData.emailAddress, otp: otp })
@@ -50,7 +50,7 @@ const updatePassword = asyncHandler(async (req, res) => {
   const patientData = await Patient.findOne({ emailAddress: req.body.email })
 
   if (!patientData)
-    return res.send(404).json({ error: 'Ptient account not found' })
+    return res.status(404).json({ error: 'Ptient account not found' })
 
   patientData.password = req.body.password
   await patientData.save()
@@ -58,6 +58,8 @@ const updatePassword = asyncHandler(async (req, res) => {
 })
 
 const updateProfile = asyncHandler(async (req, res) => {
+  if (!req.body.nicNo)
+    return res.status(400).send({ error: 'NIC number not found' })
   if (!req.body.fullName)
     return res.status(400).send({ error: 'Full Name not found' })
   if (!req.body.contactNo)
@@ -66,11 +68,11 @@ const updateProfile = asyncHandler(async (req, res) => {
     return res.status(400).send({ error: 'Email Address not found' })
 
   const patientData = await Patient.findOne({
-    emailAddress: req.body.emailAddress,
+    nicNo: req.body.nicNo,
   })
 
   if (!patientData)
-    return res.send(404).json({ error: 'Patient account not updated' })
+    return res.status(404).json({ error: 'Patient account not updated' })
 
   patientData.fullName = req.body.fullName
   patientData.contactNo = req.body.contactNo
@@ -101,7 +103,7 @@ const updateSymptoms = asyncHandler(async (req, res) => {
     await currentSymptoms.save()
     res.json({ result: 'Current symptoms updated!' })
   } else {
-    return res.send(404).json({ error: 'Patient symtom record not found' })
+    return res.status(404).json({ error: 'Patient symtom record not found' })
   }
 })
 
@@ -152,7 +154,7 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
     await patientRecord.save()
     res.json({ result: 'Health record added!' })
   } else {
-    return res.send(404).json({ error: 'Patient health record not found' })
+    return res.status(404).json({ error: 'Patient health record not found' })
   }
 })
 
@@ -187,5 +189,6 @@ export {
   updatePassword,
   updateProfile,
   updateSymptoms,
+  updateHealthStatus,
   getHealthStatusHistory,
 }

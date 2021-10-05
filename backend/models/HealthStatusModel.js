@@ -14,6 +14,10 @@ const HealthStatusSchema = mongoose.Schema({
       type: String,
       required: true,
     },
+    cityID: {
+      type: String,
+      required: false,
+    },
   },
   hospitalID: {
     type: String,
