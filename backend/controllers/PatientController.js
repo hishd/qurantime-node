@@ -1,6 +1,8 @@
 import asyncHandler from 'express-async-handler'
 import HealthStatus from '../models/HealthStatusModel.js'
 import Patient from '../models/PatientModel.js'
+import moment from 'moment'
+import { sendOTP } from './EmailController.js'
 
 const getPatients = asyncHandler(async (req, res) => {
   const patients = await Patient.find({})
@@ -71,6 +73,13 @@ const updateProfile = asyncHandler(async (req, res) => {
     nicNo: req.body.nicNo,
   })
 
+  const checkemail = await Patient.findOne({
+    emailAddress: req.body.emailAddress,
+  })
+
+  if (checkemail && patientData.emailAddress != req.body.emailAddress)
+    return res.status(400).json({ error: 'Email address already in use' })
+
   if (!patientData)
     return res.status(404).json({ error: 'Patient account not updated' })
 
@@ -86,15 +95,13 @@ const updateSymptoms = asyncHandler(async (req, res) => {
     return res.status(400).send({ error: 'NIC Number not found' })
   if (!req.body.symptoms)
     return res.status(400).send({ error: 'Symptoms not found' })
-  if (!req.body.lastUpdate)
-    return res.status(400).send({ error: 'Last updated time not found' })
 
-  const currentSymptoms = HealthStatus.findOne({
+  const currentSymptoms = await HealthStatus.findOne({
     'patient.nicNo': req.body.nicNo,
   })
   if (currentSymptoms) {
-    currentSymptoms.currentCondition.lastUpdate = req.body.lastUpdate
-    currentSymptoms.currentCondition.symptoms = req.body.symptoms
+    ;(currentSymptoms.currentCondition.lastUpdate = moment().utc(true)),
+      (currentSymptoms.currentCondition.symptoms = req.body.symptoms)
     if (req.body.symptoms.length > 3) {
       currentSymptoms.currentCondition.condition = 'Severe'
     } else {
@@ -114,11 +121,9 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
     return res.status(400).send({ error: 'SpO2 level not found' })
   if (!req.body.bpmLevel)
     return res.status(400).send({ error: 'BPM level not found' })
-  if (!req.body.time)
-    return res.status(400).send({ error: 'Update time not found' })
 
   const previousData = await HealthStatus.aggregate([
-    { $match: { 'patient.nicNo': req.params.nicNo } },
+    { $match: { 'patient.nicNo': req.body.nicNo } },
     { $unwind: '$measurements' },
     { $sort: { 'measurements.time': 1 } },
     { $limit: 10 },
@@ -134,8 +139,12 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
   for (var i = 0; i < previousSpO2.length; i++) {
     if (i == 0) continue
 
-    if (previousSpO2[i] < previousSpO2[i - 1]) decendingPattern.push(true)
-    else decendingPattern.push(false)
+    if (previousSpO2[i] < previousSpO2[i - 1] || previousSpO2[i] < 94) {
+      decendingPattern.push(true)
+      // console.log('Adding to Decending')
+    } else decendingPattern.push(false)
+
+    // console.log(previousSpO2[i])
   }
 
   const desc = decendingPattern.filter((x) => x === true).length
@@ -144,10 +153,12 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
   const newRecord = {
     spo2Level: req.body.spo2Level,
     bpmLevel: req.body.bpmLevel,
-    time: req.body.time,
+    time: moment().utc(true),
     result: req.body.spo2Level > 94 ? 'Normal' : 'Critical',
   }
-  const patientRecord = HealthStatus.find({ 'patient.nicNo': req.params.nicNo })
+  var patientRecord = await HealthStatus.findOne({
+    'patient.nicNo': req.body.nicNo,
+  })
   if (patientRecord) {
     patientRecord.healthStatus = healthStatus
     patientRecord.measurements.push(newRecord)
@@ -159,10 +170,10 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
 })
 
 const getHealthStatusHistory = asyncHandler(async (req, res) => {
-  if (!req.params.nicNo)
+  if (!req.body.nicNo)
     return res.status(400).send({ error: 'NIC Number not found' })
   const previousData = await HealthStatus.aggregate([
-    { $match: { 'patient.nicNo': req.params.nicNo } },
+    { $match: { 'patient.nicNo': req.body.nicNo } },
     { $unwind: '$measurements' },
     { $sort: { 'measurements.time': 1 } },
     { $limit: 10 },

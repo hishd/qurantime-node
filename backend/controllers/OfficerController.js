@@ -325,6 +325,13 @@ const updateProfile = asyncHandler(async (req, res) => {
     nicNo: req.body.nicNo,
   })
 
+  const checkemail = await Patient.findOne({
+    emailAddress: req.body.emailAddress,
+  })
+
+  if (checkemail && officerData.emailAddress != req.body.emailAddress)
+    return res.status(400).json({ error: 'Email address already in use' })
+
   if (!officerData)
     return res.status(404).json({ error: 'Officer account not updated' })
 
