@@ -33,11 +33,13 @@ const HealthStatusSchema = mongoose.Schema({
     },
     lastUpdate: {
       type: Date,
+      required: false,
     },
     symptoms: [
       {
         symptom: {
           type: String,
+          required: false,
         },
       },
     ],

@@ -1,7 +1,9 @@
 import asyncHandler from 'express-async-handler'
 import HealthStatus from '../models/HealthStatusModel.js'
 import Patient from '../models/PatientModel.js'
+import Hospital from '../models/HospitalModel.js'
 import moment from 'moment'
+import mongoose from 'mongoose'
 import { sendOTP } from './EmailController.js'
 
 const getPatients = asyncHandler(async (req, res) => {
@@ -20,6 +22,13 @@ const signIn = asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Patient account not found' })
 
   if (await patientData.matchPassword(req.body.password)) {
+    var hospitalContact = '1990'
+    const hospitalData = await Hospital.findById(
+      patientData.hospital.hospitalID
+    )
+    if (hospitalData) {
+      hospitalContact = hospitalData.contactNo
+    }
     return res.json({
       fullName: patientData.fullName,
       nicNo: patientData.nicNo,
@@ -27,6 +36,7 @@ const signIn = asyncHandler(async (req, res) => {
       contactNo: patientData.contactNo,
       emailAddress: patientData.emailAddress,
       hospitalID: patientData.hospital.hospitalID,
+      hospitalContact: hospitalContact,
     })
   } else {
     return res.status(401).json({ error: 'Invalid email or password' })
@@ -87,6 +97,14 @@ const updateProfile = asyncHandler(async (req, res) => {
   patientData.contactNo = req.body.contactNo
   patientData.emailAddress = req.body.emailAddress
   await patientData.save()
+  const healthData = await HealthStatus.findOne({
+    'patient.nicNo': req.body.nicNo,
+  })
+  if (healthData) {
+    healthData.patient.fullName = req.body.fullName
+    healthData.patient.contactNo = req.body.contactNo
+    await healthData.save()
+  }
   res.json({ result: 'Profile information updated!' })
 })
 
@@ -100,8 +118,8 @@ const updateSymptoms = asyncHandler(async (req, res) => {
     'patient.nicNo': req.body.nicNo,
   })
   if (currentSymptoms) {
-    ;(currentSymptoms.currentCondition.lastUpdate = moment().utc(true)),
-      (currentSymptoms.currentCondition.symptoms = req.body.symptoms)
+    currentSymptoms.currentCondition.lastUpdate = moment().utc(true)
+    currentSymptoms.currentCondition.symptoms = req.body.symptoms
     if (req.body.symptoms.length > 3) {
       currentSymptoms.currentCondition.condition = 'Severe'
     } else {
@@ -117,15 +135,13 @@ const updateSymptoms = asyncHandler(async (req, res) => {
 const updateHealthStatus = asyncHandler(async (req, res) => {
   if (!req.body.nicNo)
     return res.status(400).send({ error: 'NIC Number not found' })
-  if (!req.body.spo2Level)
-    return res.status(400).send({ error: 'SpO2 level not found' })
-  if (!req.body.bpmLevel)
-    return res.status(400).send({ error: 'BPM level not found' })
+  if (!req.body.data)
+    return res.status(400).send({ error: 'Measurement data not found' })
 
   const previousData = await HealthStatus.aggregate([
     { $match: { 'patient.nicNo': req.body.nicNo } },
     { $unwind: '$measurements' },
-    { $sort: { 'measurements.time': 1 } },
+    { $sort: { 'measurements.time': -1 } },
     { $limit: 10 },
     { $project: { measurements: 1 } },
   ])
@@ -137,31 +153,39 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
   }
 
   for (var i = 0; i < previousSpO2.length; i++) {
-    if (i == 0) continue
-
-    if (previousSpO2[i] < previousSpO2[i - 1] || previousSpO2[i] < 94) {
+    if (i == previousSpO2.length - 1) break
+    if (previousSpO2[i] < previousSpO2[i + 1] || previousSpO2[i] < 94) {
       decendingPattern.push(true)
       // console.log('Adding to Decending')
     } else decendingPattern.push(false)
-
-    // console.log(previousSpO2[i])
   }
 
   const desc = decendingPattern.filter((x) => x === true).length
   const asc = decendingPattern.filter((x) => x === false).length
   const healthStatus = desc > asc ? 'Critical Condition' : 'Normal Condition'
-  const newRecord = {
-    spo2Level: req.body.spo2Level,
-    bpmLevel: req.body.bpmLevel,
-    time: moment().utc(true),
-    result: req.body.spo2Level > 94 ? 'Normal' : 'Critical',
-  }
+
+  //
+  // const newRecord = {
+  //   spo2Level: req.body.spo2Level,
+  //   bpmLevel: req.body.bpmLevel,
+  //   time: moment().utc(true),
+  //   result: req.body.spo2Level > 94 ? 'Normal' : 'Critical',
+  // }
+
   var patientRecord = await HealthStatus.findOne({
     'patient.nicNo': req.body.nicNo,
   })
+
   if (patientRecord) {
     patientRecord.healthStatus = healthStatus
-    patientRecord.measurements.push(newRecord)
+    for (const record of req.body.data) {
+      patientRecord.measurements.push({
+        spo2Level: record.spo2Level,
+        bpmLevel: record.bpmLevel,
+        time: moment().utc(true),
+        result: record.spo2Level > 94 ? 'Normal' : 'Critical',
+      })
+    }
     await patientRecord.save()
     res.json({ result: 'Health record added!' })
   } else {
@@ -185,7 +209,7 @@ const getHealthStatusHistory = asyncHandler(async (req, res) => {
     healthData.push({
       spo2Level: item.measurements.spo2Level,
       bpmLevel: item.measurements.bpmLevel,
-      time: item.measurements.time,
+      time: moment(item.measurements.time).format('YYYY-MM-DD HH:mm'),
       result: item.measurements.result,
     })
   }

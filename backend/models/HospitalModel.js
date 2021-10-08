@@ -6,6 +6,10 @@ const HospitalSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    contactNo: {
+      type: String,
+      required: true,
+    },
     district: {
       districtID: {
         type: String,

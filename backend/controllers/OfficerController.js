@@ -4,6 +4,7 @@ import { sendOTP } from './EmailController.js'
 import HealthStatus from '../models/HealthStatusModel.js'
 import Patient from '../models/PatientModel.js'
 import generator from 'generate-password'
+import moment from 'moment'
 
 const getOfficers = asyncHandler(async (req, res) => {})
 
@@ -63,12 +64,17 @@ const getAreaStats = asyncHandler(async (req, res) => {
   if (!req.body.cityID)
     return res.status(400).send({ error: 'City ID not found' })
 
-  const activePatients = await Patient.countDocuments({ active: true })
+  const activePatients = await Patient.countDocuments({
+    active: true,
+    'city.cityID': req.body.cityID,
+  })
   const criticalCount = await HealthStatus.countDocuments({
     healthStatus: 'Critical Condition',
+    'patient.cityID': req.body.cityID,
   })
   const normalCount = await HealthStatus.countDocuments({
     healthStatus: 'Normal Condition',
+    'patient.cityID': req.body.cityID,
   })
 
   res.json({
@@ -89,12 +95,12 @@ const registerPatient = asyncHandler(async (req, res) => {
     return res.status(400).send({ error: 'Contact number not found' })
   if (!req.body.emailAddress)
     return res.status(400).send({ error: 'Email Address not found' })
+  if (!req.body.password)
+    return res.status(400).send({ error: 'Password not found' })
   if (!req.body.locationLat)
     return res.status(400).send({ error: 'Location Lat not found' })
   if (!req.body.locationLon)
     return res.status(400).send({ error: 'Location Lon not found' })
-  if (!req.body.vaccinated)
-    return res.status(400).send({ error: 'Vaccinated not found' })
   if (!req.body.hospitalID)
     return res.status(400).send({ error: 'Hospital ID not found' })
   if (!req.body.hospitalName)
@@ -114,6 +120,7 @@ const registerPatient = asyncHandler(async (req, res) => {
     address,
     contactNo,
     emailAddress,
+    password,
     locationLat,
     locationLon,
     vaccinated,
@@ -126,10 +133,6 @@ const registerPatient = asyncHandler(async (req, res) => {
   } = req.body
 
   const active = true
-  const password = generator.generate({
-    length: 8,
-    numbers: true,
-  })
   var comorbidities = []
   if (req.body.comorbidities) {
     for (const entry of req.body.comorbidities) {
@@ -159,11 +162,7 @@ const registerPatient = asyncHandler(async (req, res) => {
     patient.comorbidities = comorbidities
 
     await patient.save()
-    return res.json({
-      nicNo: nicNo,
-      fullName: fullName,
-      password: password,
-    })
+    return res.json({ result: 'Patient registration successful!' })
   } else {
     const patientData = {
       nicNo: nicNo,
@@ -198,16 +197,13 @@ const registerPatient = asyncHandler(async (req, res) => {
           'patient.cityID': cityID,
           hospitalID: hospitalID,
           healthStatus: 'Normal Condition',
+          'currentCondition.condition': 'Normal',
         }
 
         await HealthStatus.create(healthData)
       }
 
-      return res.json({
-        nicNo: nicNo,
-        fullName: fullName,
-        password: password,
-      })
+      return res.json({ result: 'Patient registration successful!' })
     } else
       return res
         .status(400)
@@ -222,19 +218,29 @@ const searchPatients = asyncHandler(async (req, res) => {
   if (!req.body.nicNo) {
     const patientsData = await HealthStatus.find(
       { 'patient.cityID': req.body.cityID },
-      ['patient.nicNo', 'patient.fullName', 'patient.contactNo']
+      ['patient.nicNo', 'patient.fullName', 'patient.contactNo', 'healthStatus']
     )
     for (const data of patientsData) {
-      patientDataResponse.push(data.patient)
+      patientDataResponse.push({
+        nicNo: data.patient.nicNo,
+        fullName: data.patient.fullName,
+        contactNo: data.patient.contactNo,
+        healthStatus: data.healthStatus,
+      })
     }
     res.json(patientDataResponse)
   } else {
     const patientsData = await HealthStatus.find(
       { 'patient.nicNo': req.body.nicNo },
-      ['patient.nicNo', 'patient.fullName', 'patient.contactNo']
+      ['patient.nicNo', 'patient.fullName', 'patient.contactNo', 'healthStatus']
     )
     for (const data of patientsData) {
-      patientDataResponse.push(data.patient)
+      patientDataResponse.push({
+        nicNo: data.patient.nicNo,
+        fullName: data.patient.fullName,
+        contactNo: data.patient.contactNo,
+        healthStatus: data.healthStatus,
+      })
     }
     res.json(patientDataResponse)
   }
@@ -243,12 +249,21 @@ const searchPatients = asyncHandler(async (req, res) => {
 const removePatient = asyncHandler(async (req, res) => {
   Patient.findOneAndRemove({ nicNo: req.body.nicNo }, function (err, data) {
     if (!err) {
-      HealthStatus.findOneAndRemove({ 'patient.nicNo': req.body.nicNo })
       res.status(200).json({ result: 'Patient record removed' })
     } else {
       res.status(400).json({ error: 'Could not remove Patient record!' })
     }
   })
+  HealthStatus.findOneAndRemove(
+    { 'patient.nicNo': req.body.nicNo },
+    function (err, data) {
+      if (!err) {
+        console.log('Health Record removed')
+      } else {
+        console.log('Could not remove health record')
+      }
+    }
+  )
 })
 
 const filterByStatus = asyncHandler(async (req, res) => {
@@ -265,7 +280,7 @@ const filterByStatus = asyncHandler(async (req, res) => {
   if (req.body.healthStatus) {
     healthData = await HealthStatus.find(
       {
-        healthStatus: req.body.HealthStatus,
+        healthStatus: req.body.healthStatus,
         'patient.cityID': req.body.cityID,
       },
       [
@@ -304,7 +319,9 @@ const filterByStatus = asyncHandler(async (req, res) => {
       contactNo: data.patient.contactNo,
       healthStatus: data.healthStatus,
       latestCondition: data.currentCondition.condition,
-      lastUpdate: data.currentCondition.lastUpdate,
+      lastUpdate: moment(data.currentCondition.lastUpdate).format(
+        'YYYY-MM-DD HH:mm'
+      ),
     })
   }
 
@@ -325,12 +342,12 @@ const updateProfile = asyncHandler(async (req, res) => {
     nicNo: req.body.nicNo,
   })
 
-  const checkemail = await Patient.findOne({
+  const checkemail = await Officer.findOne({
     emailAddress: req.body.emailAddress,
   })
 
   if (checkemail && officerData.emailAddress != req.body.emailAddress)
-    return res.status(400).json({ error: 'Email address already in use' })
+    return res.status(401).json({ error: 'Email address already in use' })
 
   if (!officerData)
     return res.status(404).json({ error: 'Officer account not updated' })

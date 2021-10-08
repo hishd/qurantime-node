@@ -15,13 +15,13 @@ import {
 const router = express.Router()
 router.route('/').get(getOfficers)
 router.route('/signIn').post(signIn)
-router.route('/getOtp').get(resetPassword)
+router.route('/getOtp').post(resetPassword)
 router.route('/password').put(updatePassword)
-router.route('/areaStat').get(getAreaStats)
+router.route('/areaStat').post(getAreaStats)
 router.route('/patient').post(registerPatient)
-router.route('/patient').get(searchPatients)
-router.route('/patient').delete(removePatient)
-router.route('/filter').get(filterByStatus)
+router.route('/searchPatients').post(searchPatients)
+router.route('/removePatient').post(removePatient)
+router.route('/filter').post(filterByStatus)
 router.route('/profile').put(updateProfile)
 
 export default router
