@@ -13,7 +13,7 @@ const getHospitals = asyncHandler(async (req, res) => {
 
 const getHospitalInfo = asyncHandler(async (req, res) => {
   const hospital = await Hospital.findOne({
-    _id: mongoose.Types.ObjectId('6157851683bed34bfcb7c58a'),
+    _id: mongoose.Types.ObjectId(req.params.hospitalID),
   })
   if (hospital) {
     return res.json(hospital)
