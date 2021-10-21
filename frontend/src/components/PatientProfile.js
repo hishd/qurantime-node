@@ -152,9 +152,9 @@ function PatientProfile({ match }) {
                         {patientData.measurements.map((data, index) => (
                           <tr key={index}>
                             <td>{index + 1}</td>
-                            <td>{data.spo2Level}%</td>
-                            <td>{data.bpmLevel}</td>
-                            <td>{data.time.substring(0, 10)}</td>
+                            <td>{Number(data.spo2Level).toFixed(2)}%</td>
+                            <td>{Number(data.bpmLevel).toFixed(2)}</td>
+                            <td>{data.time.substring(0, 16)}</td>
                           </tr>
                         ))}
                       </tbody>

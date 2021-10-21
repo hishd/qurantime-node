@@ -72,17 +72,17 @@ function LatestResults() {
                       </td>
                       <td>
                         <LinkContainer to={`/profile/${patient.nicNo}`}>
-                          <label>{patient.spo2Level}%</label>
+                          <label>{Number(patient.spo2Level).toFixed(2)}%</label>
                         </LinkContainer>
                       </td>
                       <td>
                         <LinkContainer to={`/profile/${patient.nicNo}`}>
-                          <label>{patient.bpmLevel}</label>
+                          <label>{Number(patient.bpmLevel).toFixed(2)}</label>
                         </LinkContainer>
                       </td>
                       <td>
                         <LinkContainer to={`/profile/${patient.nicNo}`}>
-                          <label>{patient.time.substring(0, 10)}</label>
+                          <label>{patient.time.substring(0, 16)}</label>
                         </LinkContainer>
                       </td>
                     </tr>

@@ -130,12 +130,14 @@ function Patients() {
                       </td>
                       <td>
                         <LinkContainer to={`/profile/${patient.nicNo}`}>
-                          <label>{patient.averageSPO2}%</label>
+                          <label>
+                            {Number(patient.averageSPO2).toFixed(2)}%
+                          </label>
                         </LinkContainer>
                       </td>
                       <td>
                         <LinkContainer to={`/profile/${patient.nicNo}`}>
-                          <label>{patient.averageBPM}</label>
+                          <label>{Number(patient.averageBPM).toFixed(2)}</label>
                         </LinkContainer>
                       </td>
                     </tr>
