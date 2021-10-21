@@ -1,0 +1,37 @@
+.h1-custom {
+  font-family: sans-serif;
+}
+
+.spacing-btn {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.body-container-padding {
+  padding: 10px;
+}
+
+.scroll-bar-table {
+  border: none;
+  overflow: scroll;
+}
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  border: 1px solid #343a40;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #585f66;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #585f66;
+}
+
+.ScrollStyle {
+  height: 650px;
+  overflow-y: scroll;
+}

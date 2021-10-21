@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler'
 import Hospital from '../models/HospitalModel.js'
+import mongoose from 'mongoose'
 
 const getHospitals = asyncHandler(async (req, res) => {
   if (!req.body.cityID)
@@ -10,4 +11,15 @@ const getHospitals = asyncHandler(async (req, res) => {
   res.json(hospitals)
 })
 
-export { getHospitals }
+const getHospitalInfo = asyncHandler(async (req, res) => {
+  const hospital = await Hospital.findOne({
+    _id: mongoose.Types.ObjectId('6157851683bed34bfcb7c58a'),
+  })
+  if (hospital) {
+    return res.json(hospital)
+  } else {
+    return res.status(404).send({ error: 'Hospital not found' })
+  }
+})
+
+export { getHospitals, getHospitalInfo }

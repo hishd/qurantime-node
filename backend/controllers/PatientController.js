@@ -217,6 +217,115 @@ const getHealthStatusHistory = asyncHandler(async (req, res) => {
   res.json(healthData)
 })
 
+const getPatientsUnderHospital = asyncHandler(async (req, res) => {
+  const results = await Patient.find({ 'hospital.hospitalID': req.params.id })
+  var data = []
+  var record = {}
+  for (const patient of results) {
+    record = {}
+    const avgValues = await HealthStatus.aggregate([
+      {
+        $match: { hospitalID: req.params.id, 'patient.nicNo': patient.nicNo },
+      },
+      {
+        $unwind: '$measurements',
+      },
+      {
+        $group: {
+          _id: null,
+          averageSPO2: { $avg: '$measurements.spo2Level' },
+          averageBPM: { $avg: '$measurements.bpmLevel' },
+        },
+      },
+    ])
+
+    if (avgValues && avgValues[0]) {
+      record.averageSPO2 = avgValues[0].averageSPO2
+      record.averageBPM = avgValues[0].averageBPM
+    } else {
+      record.averageSPO2 = 0
+      record.averageBPM = 0
+    }
+
+    record.nicNo = patient.nicNo
+    record.fullName = patient.fullName
+    record.createdAt = patient.createdAt
+    record.contactNo = patient.contactNo
+    record.comorbidities = patient.comorbidities.length > 0 ? true : false
+    data.push(record)
+  }
+
+  res.json(data)
+})
+
+const searchPatientsInHospital = asyncHandler(async (req, res) => {
+  const results = await Patient.find({
+    'hospital.hospitalID': req.params.id,
+    nicNo: { $regex: '.*' + req.params.nicNo + '.*' },
+  })
+  var data = []
+  var record = {}
+  for (const patient of results) {
+    record = {}
+    const avgValues = await HealthStatus.aggregate([
+      {
+        $match: { hospitalID: req.params.id, 'patient.nicNo': patient.nicNo },
+      },
+      {
+        $unwind: '$measurements',
+      },
+      {
+        $group: {
+          _id: null,
+          averageSPO2: { $avg: '$measurements.spo2Level' },
+          averageBPM: { $avg: '$measurements.bpmLevel' },
+        },
+      },
+    ])
+
+    if (avgValues && avgValues[0]) {
+      record.averageSPO2 = avgValues[0].averageSPO2
+      record.averageBPM = avgValues[0].averageBPM
+    } else {
+      record.averageSPO2 = 0
+      record.averageBPM = 0
+    }
+
+    record.nicNo = patient.nicNo
+    record.fullName = patient.fullName
+    record.createdAt = patient.createdAt
+    record.contactNo = patient.contactNo
+    record.comorbidities = patient.comorbidities.length > 0 ? true : false
+    data.push(record)
+  }
+
+  res.json(data)
+})
+
+const getPatientProfile = asyncHandler(async (req, res) => {
+  const results = await Patient.findOne({
+    nicNo: req.params.nicNo,
+  })
+  const measurements = await HealthStatus.findOne(
+    {
+      'patient.nicNo': req.params.nicNo,
+    },
+    ['measurements']
+  )
+
+  res.json({
+    fullName: results.fullName,
+    nicNo: results.nicNo,
+    contactNo: results.contactNo,
+    address: results.address,
+    emailAddress: results.emailAddress,
+    createdAt: results.createdAt,
+    vaccinated: results.vaccinated ? 'Yes' : 'No',
+    comorbidities: results.comorbidities,
+    measurements: measurements.measurements,
+  })
+})
+
 export {
   getPatients,
   signIn,
@@ -226,4 +335,7 @@ export {
   updateSymptoms,
   updateHealthStatus,
   getHealthStatusHistory,
+  getPatientsUnderHospital,
+  searchPatientsInHospital,
+  getPatientProfile,
 }
