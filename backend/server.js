@@ -8,6 +8,7 @@ import hospitalRoutes from './routes/HospitalRoutes.js'
 import locationRoutes from './routes/LocationRoutes.js'
 import officerRoutes from './routes/OfficerRoutes.js'
 import patientRoutes from './routes/PatientRoutes.js'
+import path from 'path'
 
 dotenv.config()
 connectDB()
