@@ -199,7 +199,7 @@ const getHealthStatusHistory = asyncHandler(async (req, res) => {
   const previousData = await HealthStatus.aggregate([
     { $match: { 'patient.nicNo': req.body.nicNo } },
     { $unwind: '$measurements' },
-    { $sort: { 'measurements.time': 1 } },
+    { $sort: { 'measurements.time': -1 } },
     { $limit: 10 },
     { $project: { measurements: 1 } },
   ])
@@ -306,12 +306,32 @@ const getPatientProfile = asyncHandler(async (req, res) => {
   const results = await Patient.findOne({
     nicNo: req.params.nicNo,
   })
-  const measurements = await HealthStatus.findOne(
+  // const measurements = await HealthStatus.findOne(
+  //   {
+  //     'patient.nicNo': req.params.nicNo,
+  //   },
+  //   ['measurements']
+  // ).sort({ 'measurements.time': 'desc' })
+
+  const measurements = await HealthStatus.aggregate([
     {
-      'patient.nicNo': req.params.nicNo,
+      $match: { 'patient.nicNo': req.params.nicNo },
     },
-    ['measurements']
-  )
+    {
+      $unwind: '$measurements',
+    },
+    {
+      $sort: { 'measurements.time': -1 },
+    },
+    {
+      $project: { measurements: 1 },
+    },
+  ])
+
+  var data = []
+  for (const element of measurements) {
+    data.push(element.measurements)
+  }
 
   res.json({
     fullName: results.fullName,
@@ -322,7 +342,7 @@ const getPatientProfile = asyncHandler(async (req, res) => {
     createdAt: results.createdAt,
     vaccinated: results.vaccinated ? 'Yes' : 'No',
     comorbidities: results.comorbidities,
-    measurements: measurements.measurements,
+    measurements: data,
   })
 })
 

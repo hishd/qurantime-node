@@ -37,7 +37,7 @@ const getLatestResults = asyncHandler(async (req, res) => {
       $sort: { 'measurements.time': -1 },
     },
     {
-      $project: { measurements: { $slice: ['$measurements', 1] }, patient: 1 },
+      $project: { measurements: { $slice: ['$measurements', -1] }, patient: 1 },
     },
   ])
 
@@ -64,7 +64,7 @@ const getCriticalResults = asyncHandler(async (req, res) => {
       $sort: { 'measurements.time': -1 },
     },
     {
-      $project: { measurements: { $slice: ['$measurements', 1] }, patient: 1 },
+      $project: { measurements: { $slice: ['$measurements', -1] }, patient: 1 },
     },
   ])
 
