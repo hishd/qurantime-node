@@ -209,7 +209,7 @@ const getHealthStatusHistory = asyncHandler(async (req, res) => {
     healthData.push({
       spo2Level: item.measurements.spo2Level,
       bpmLevel: item.measurements.bpmLevel,
-      time: moment(item.measurements.time).format('YYYY-MM-DD HH:mm'),
+      time: moment.utc(item.measurements.time).format('YYYY-MM-DD HH:mm'),
       result: item.measurements.result,
     })
   }
