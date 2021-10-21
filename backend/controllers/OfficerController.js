@@ -319,9 +319,9 @@ const filterByStatus = asyncHandler(async (req, res) => {
       contactNo: data.patient.contactNo,
       healthStatus: data.healthStatus,
       latestCondition: data.currentCondition.condition,
-      lastUpdate: moment(data.currentCondition.lastUpdate).format(
-        'YYYY-MM-DD HH:mm'
-      ),
+      lastUpdate: moment
+        .utc(data.currentCondition.lastUpdate)
+        .format('YYYY-MM-DD HH:mm'),
     })
   }
 
