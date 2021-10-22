@@ -24,7 +24,8 @@
     "generate-password": "^1.6.1",
     "moment": "^2.29.1",
     "mongoose": "^6.0.8",
-    "nodemailer": "^6.6.5"
+    "nodemailer": "^6.6.5",
+    "piesocket-nodejs": "^1.0.1"
   },
   "devDependencies": {
     "concurrently": "^6.2.2",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import dotenv from 'dotenv'
+import PieSocket from 'piesocket-js'
 
 function StatBoxes() {
   const [totalPatients, setTotalPatients] = useState(0)
@@ -9,6 +10,27 @@ function StatBoxes() {
   const [normalPatients, setNormalPatients] = useState(0)
 
   dotenv.config()
+
+  const setupPieSocket = () => {
+    console.log('Creating new piesocket....>!')
+    var piesocket = new PieSocket({
+      clusterId: 'free3',
+      apiKey: '8P8P43ZfLgHwl292VADLCJxlaRc48Z6ubEG8gBTO',
+    })
+    var channel = piesocket.subscribe('1123')
+
+    channel.on('open', () => {
+      console.log('PieSocket Channel Connected!')
+    })
+
+    channel.on('message', function (event) {
+      const data = JSON.parse(event.data)
+      setTotalPatients(JSON.parse(data.totalPatients))
+      setCriticalSymptoms(JSON.parse(data.criticalSymptoms))
+      setCriticalSPO2(JSON.parse(data.criticalSPO2))
+      setNormalPatients(JSON.parse(data.normalSPO2))
+    })
+  }
 
   const fetchStats = async () => {
     const request = await axios.get(
@@ -30,6 +52,7 @@ function StatBoxes() {
 
   useEffect(() => {
     fetchStats()
+    setupPieSocket()
   }, [])
 
   return (

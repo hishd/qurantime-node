@@ -3,11 +3,29 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 import Loader from '../components/Loader'
 import { LinkContainer } from 'react-router-bootstrap'
+import PieSocket from 'piesocket-js'
 
 function LatestResults() {
   const [patients, setPatients] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   dotenv.config()
+
+  const setupPieSocket = () => {
+    console.log('Creating new piesocket....>!')
+    var piesocket = new PieSocket({
+      clusterId: 'free3',
+      apiKey: '8P8P43ZfLgHwl292VADLCJxlaRc48Z6ubEG8gBTO',
+    })
+    var channel = piesocket.subscribe('1122')
+
+    channel.on('open', () => {
+      console.log('PieSocket Channel Connected!')
+    })
+
+    channel.on('message', function (event) {
+      setPatients(JSON.parse(event.data))
+    })
+  }
 
   const getLatestData = async () => {
     const request = await axios.get(
@@ -28,6 +46,7 @@ function LatestResults() {
 
   useEffect(() => {
     getLatestData()
+    setupPieSocket()
   }, [])
 
   return (

@@ -5,6 +5,7 @@ import Hospital from '../models/HospitalModel.js'
 import moment from 'moment'
 import mongoose from 'mongoose'
 import { sendOTP } from './EmailController.js'
+import { sendLatestData, sendHealthSummary } from './HealthStatusController.js'
 
 const getPatients = asyncHandler(async (req, res) => {
   const patients = await Patient.find({})
@@ -127,6 +128,7 @@ const updateSymptoms = asyncHandler(async (req, res) => {
     }
     await currentSymptoms.save()
     res.json({ result: 'Current symptoms updated!' })
+    sendHealthSummary(currentSymptoms.hospitalID)
   } else {
     return res.status(404).json({ error: 'Patient symtom record not found' })
   }
@@ -188,6 +190,8 @@ const updateHealthStatus = asyncHandler(async (req, res) => {
     }
     await patientRecord.save()
     res.json({ result: 'Health record added!' })
+    sendLatestData(patientRecord.hospitalID)
+    sendHealthSummary(patientRecord.hospitalID)
   } else {
     return res.status(404).json({ error: 'Patient health record not found' })
   }
